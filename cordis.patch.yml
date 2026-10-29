@@ -1,0 +1,3 @@
+- insert:
+    - id: main-file-tabs
+      name: '@local/dsh-main-file-tabs'

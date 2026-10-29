@@ -1,0 +1,30 @@
+{
+  "meta": {
+    "title": "Main File Tabs",
+    "description": "Open the file you are already previewing in the right Sidebar as a tab in the main workspace, with live editing and preview sync."
+  },
+  "openInMain": "Open in main workspace",
+  "openInMainShort": "Open in main",
+  "backToChat": "Chat",
+  "save": "Save",
+  "saved": "Saved",
+  "reload": "Reload from disk",
+  "close": "Close",
+  "closeOthers": "Close other tabs",
+  "split": "Split",
+  "single": "Single pane",
+  "edit": "Edit",
+  "preview": "Preview",
+  "emptyTitle": "No file open here yet",
+  "emptyBody": "Open a file in the right Sidebar, then click “Open in main workspace” in its toolbar.",
+  "loading": "Reading file…",
+  "readFailed": "Could not read this file",
+  "tooLarge": "This file is too large to edit in the main workspace.",
+  "binary": "This file has no editor in the main workspace.",
+  "download": "Open/download",
+  "discard": "This tab has unsaved changes. Close it anyway?",
+  "reloadDiscard": "Reloading drops unsaved changes in this tab. Continue?",
+  "tabList": "Open files",
+  "syncUnavailable": "Live sync with the Sidebar is unavailable for this file; edits stay inside the main tab.",
+  "openInSidebar": "Show in Sidebar"
+}

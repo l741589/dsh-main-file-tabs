@@ -1,0 +1,30 @@
+{
+  "meta": {
+    "title": "主工作区文件页签",
+    "description": "把右侧边栏里正在预览的文件以页签形式打开到主工作区，并与侧边栏的编辑、预览实时同步。"
+  },
+  "openInMain": "在主工作区打开",
+  "openInMainShort": "主工作区打开",
+  "backToChat": "对话",
+  "save": "保存",
+  "saved": "已保存",
+  "reload": "从磁盘重新加载",
+  "close": "关闭",
+  "closeOthers": "关闭其他页签",
+  "split": "分屏",
+  "single": "单栏",
+  "edit": "编辑",
+  "preview": "预览",
+  "emptyTitle": "主工作区还没有打开文件",
+  "emptyBody": "在右侧边栏打开一个文件，然后点它的工具栏里的「在主工作区打开」。",
+  "loading": "正在读取文件…",
+  "readFailed": "无法读取这个文件",
+  "tooLarge": "文件太大，无法在主工作区里编辑。",
+  "binary": "这个文件在主工作区里没有可用的编辑器。",
+  "download": "打开/下载",
+  "discard": "这个页签有未保存的修改，仍要关闭吗？",
+  "reloadDiscard": "重新加载会丢弃这个页签里未保存的修改，继续吗？",
+  "tabList": "已打开的文件",
+  "syncUnavailable": "这个文件无法与侧边栏实时同步；修改只保留在主工作区页签里。",
+  "openInSidebar": "在侧边栏显示"
+}

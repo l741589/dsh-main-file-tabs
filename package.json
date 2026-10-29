@@ -1,0 +1,53 @@
+{
+  "name": "@local/dsh-main-file-tabs",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Open files from the DSH right Sidebar as tabs in the main workspace, with live two-way editing and Markdown preview sync.",
+  "license": "MIT",
+  "author": "l741589",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/l741589/dsh-main-file-tabs.git"
+  },
+  "homepage": "https://github.com/l741589/dsh-main-file-tabs#readme",
+  "bugs": {
+    "url": "https://github.com/l741589/dsh-main-file-tabs/issues"
+  },
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "deepseek-harness",
+    "file-tabs",
+    "editor",
+    "markdown"
+  ],
+  "icon": "./icon.svg",
+  "exports": {
+    ".": "./index.js",
+    "./client": "./client.js",
+    "./locale/*.json": "./locale/*.json",
+    "./icon": "./icon.svg"
+  },
+  "files": [
+    "index.js",
+    "client.js",
+    "cordis.patch.yml",
+    "locale/*.json",
+    "icon.svg",
+    "README.md",
+    "LICENSE",
+    "docs/images/main-file-tabs.png"
+  ],
+  "dsh": {
+    "manifestVersion": 1,
+    "bundle": { "patch": "./cordis.patch.yml" },
+    "client": {
+      "platform": "web",
+      "immediately": true,
+      "inject": [
+        "@deepseek-ai/dsh-client-locale",
+        "@deepseek-ai/dsh-client-ui-slots"
+      ]
+    }
+  }
+}
