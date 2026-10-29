@@ -3,6 +3,7 @@
 > 在 DSH 主工作区里继续编辑右侧边栏的文件：页签、实时双向同步、边编辑边预览。
 
 [![DSH](https://img.shields.io/badge/DSH-0.2.1--rc.2%2B-4d6bfe)](https://github.com/deepseek-ai/deepseek-harness)
+[![npm](https://img.shields.io/npm/v/dsh-main-file-tabs.svg)](https://www.npmjs.com/package/dsh-main-file-tabs)
 [![Platform](https://img.shields.io/badge/platform-Web%20%2F%20Desktop-7C3AED)](#requirements)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![GitHub stars](https://img.shields.io/github/stars/l741589/dsh-main-file-tabs?style=flat)](https://github.com/l741589/dsh-main-file-tabs)
@@ -76,15 +77,23 @@ DSH 的右侧边栏适合快速浏览文件，但编辑长文档、宽表格或�
 
 ## 安装
 
-### 从 GitHub 安装（推荐）
+### 从 npm 安装（推荐）
 
 ```sh
-dsh plugin --profile desktop add github:l741589/dsh-main-file-tabs
+dsh plugin --profile desktop add dsh-main-file-tabs
 ```
 
 把 `desktop` 换成你的 profile 名称。安装完成后**完全退出并重新打开 DSH**；桌面版如果缩小到托盘，请从托盘退出。重新打开后按 `Ctrl+R` / Cmd+R 刷新页面。
 
 > 安装不会执行构建脚本，通常不会出现 `approve-builds` 提示。
+
+### 从 GitHub 安装（备选）
+
+```sh
+dsh plugin --profile desktop add github:l741589/dsh-main-file-tabs
+```
+
+适合想固定到某个 commit、或还没有 npm 发布版本的场景。
 
 ### 从本地目录安装（开发）
 
