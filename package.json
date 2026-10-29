@@ -1,6 +1,6 @@
 {
   "name": "dsh-main-file-tabs",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "type": "module",
   "description": "Open files from the DSH right Sidebar as tabs in the main workspace, with live two-way editing and Markdown preview sync.",
   "license": "MIT",

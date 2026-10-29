@@ -1,5 +1,5 @@
 window.__ModuleLoader__.load({
-  id: '@local/dsh-main-file-tabs',
+  id: 'dsh-main-file-tabs',
   factory(require) {
     const React = require('react')
 
