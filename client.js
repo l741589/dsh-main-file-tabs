@@ -256,10 +256,17 @@ window.__ModuleLoader__.load({
       return button && button.parentElement ? button.parentElement : null
     }
 
+    function hostRouteHref(service, path) {
+      const resolved = service.hostRouteUrl(path)
+      if (typeof resolved === 'string') return resolved
+      if (resolved && typeof resolved.href === 'string') return resolved.href
+      return String(resolved)
+    }
+
     function fileRoute(ctx, method, payload, signal) {
       const service = (pluginCtx && pluginCtx.get('betterSidebar')) || ctx.get('betterSidebar')
       if (!service || typeof service.hostRouteUrl !== 'function') return Promise.reject(new Error('betterSidebar host routes unavailable'))
-      const url = service.hostRouteUrl('sidebar/api/' + method).href
+      const url = hostRouteHref(service, 'sidebar/api/' + method)
       return fetch(url, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
@@ -287,7 +294,7 @@ window.__ModuleLoader__.load({
       const params = new URLSearchParams({ sessionId: tab.sessionId, path: tab.absPath })
       if (tab.cwd) params.set('cwd', tab.cwd)
       if (download) params.set('download', '1')
-      return service.hostRouteUrl('sidebar/file?' + params.toString()).href
+      return hostRouteHref(service, 'sidebar/file?' + params.toString())
     }
 
     function htmlUrl(ctx, tab) {
@@ -296,7 +303,7 @@ window.__ModuleLoader__.load({
       const unc = /^[\\/]{2}[^\\/]/.test(tab.absPath)
       const segments = tab.absPath.split(/[\\/]+/).filter(Boolean)
       const route = '/sidebar/html/' + encodeURIComponent(tab.sessionId) + '/' + (unc ? '/' : '') + segments.map(encodeURIComponent).join('/')
-      return service.hostRouteUrl(route).href
+      return hostRouteHref(service, route)
     }
 
     // ---------------------------------------------------------------------
