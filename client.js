@@ -74,7 +74,7 @@ window.__ModuleLoader__.load({
 
     const CSS = `
 .dsh-mft-root{height:100%;min-height:0;display:flex;flex-direction:column;background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);font-size:13px;line-height:1.45}
-.dsh-mft-tabs{display:flex;align-items:stretch;min-height:38px;border-bottom:1px solid var(--dsw-alias-border-l1);background:var(--dsw-specific-sidebar-fill);overflow-x:auto;overflow-y:hidden;scrollbar-width:thin}
+.dsh-mft-tabs{display:flex;align-items:stretch;height:38px;min-height:38px;box-sizing:border-box;position:sticky;top:0;z-index:20;flex:0 0 auto;border-bottom:1px solid var(--dsw-alias-border-l1);background:var(--dsw-specific-sidebar-fill);overflow-x:auto;overflow-y:hidden;scrollbar-width:thin}
 .dsh-mft-tab{display:flex;align-items:center;gap:6px;min-width:0;max-width:240px;padding:0 8px 0 10px;border-right:1px solid var(--dsw-alias-border-l1);cursor:default;color:var(--dsw-alias-label-secondary);white-space:nowrap;position:relative}
 .dsh-mft-tab:hover{background:var(--dsw-alias-bg-layer-2)}
 .dsh-mft-tab[data-active="true"]{background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary)}
@@ -91,7 +91,7 @@ window.__ModuleLoader__.load({
 .dsh-mft-empty{flex:1 1 auto;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:32px;text-align:center;color:var(--dsw-alias-label-secondary)}
 .dsh-mft-empty h2{margin:8px 0 0;font-size:16px;font-weight:600;color:var(--dsw-alias-label-primary)}
 .dsh-mft-empty p{margin:0;max-width:480px;font-size:13px}
-.dsh-mft-toolbar{display:flex;align-items:center;gap:6px;min-height:34px;padding:3px 8px;border-bottom:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-secondary);font-size:12px}
+.dsh-mft-toolbar{display:flex;align-items:center;gap:6px;min-height:34px;box-sizing:border-box;position:sticky;top:38px;z-index:19;flex:0 0 auto;padding:3px 8px;border-bottom:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-secondary);font-size:12px}
 .dsh-mft-path{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-right:auto;font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:11.5px;color:var(--dsw-alias-label-secondary)}
 .dsh-mft-tool{display:inline-flex;align-items:center;gap:4px;height:24px;padding:0 7px;border:1px solid transparent;border-radius:5px;background:transparent;color:var(--dsw-alias-label-secondary);font:inherit;font-size:12px;cursor:pointer;white-space:nowrap}
 .dsh-mft-tool:hover{background:var(--dsw-alias-bg-layer-2);color:var(--dsw-alias-label-primary)}
