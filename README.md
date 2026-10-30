@@ -271,6 +271,9 @@ api.features  // ['openFile','onDidChange','onDidOpen','onDidClose','getOpenFile
 ├── docs/
 │   └── images/
 │       └── main-file-tabs.png
+├── assets/
+│   └── icon-180.png
+├── screenshots.json
 ├── icon.svg
 ├── LICENSE
 └── README.md
@@ -281,6 +284,8 @@ api.features  // ['openFile','onDidChange','onDidOpen','onDidClose','getOpenFile
 - **`cordis.patch.yml`**：把 `main-file-tabs` 行插入 DSH profile。
 - **`locale/*.json`**：插件管理器的标题/描述与中英文案。
 - **`docs/images/main-file-tabs.png`**：README 中的实际界面截图。
+- **`assets/icon-180.png`**：插件市场的 180×180 位图图标（`icon.svg` 不能直接作为市场图标）。
+- **`screenshots.json`**：市场详情页的截图清单。
 
 ## 开发
 
