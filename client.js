@@ -2,6 +2,7 @@ window.__ModuleLoader__.load({
   id: 'dsh-main-file-tabs',
   factory(require) {
     const React = require('react')
+    const ReactDOM = require('react-dom')
 
     const h = React.createElement
     const NS = 'dshMainFileTabs'
@@ -16,6 +17,11 @@ window.__ModuleLoader__.load({
       saved: '已保存',
       reload: '从磁盘重新加载',
       close: '关闭',
+      closeAll: '关闭所有',
+      closeLeft: '关闭左侧所有',
+      closeRight: '关闭右侧所有',
+      readOnly: '只读',
+      discardMany: '部分页签有未保存修改，仍要关闭吗？',
       split: '分屏',
       single: '单栏',
       edit: '编辑',
@@ -41,6 +47,11 @@ window.__ModuleLoader__.load({
       saved: 'Saved',
       reload: 'Reload from disk',
       close: 'Close',
+      closeAll: 'Close all',
+      closeLeft: 'Close tabs to the left',
+      closeRight: 'Close tabs to the right',
+      readOnly: 'Read-only',
+      discardMany: 'Some selected tabs have unsaved changes. Close them anyway?',
       split: 'Split',
       single: 'Single pane',
       edit: 'Edit',
@@ -97,6 +108,13 @@ window.__ModuleLoader__.load({
 .dsh-mft-tool:hover{background:var(--dsw-alias-bg-layer-2);color:var(--dsw-alias-label-primary)}
 .dsh-mft-tool[data-active="true"]{background:var(--dsw-alias-bg-layer-2);color:var(--dsw-alias-label-primary);border-color:var(--dsw-alias-border-l1)}
 .dsh-mft-tool:disabled{opacity:.45;cursor:default}
+.dsh-mft-tablock{flex:none;display:inline-flex;align-items:center;color:var(--dsw-alias-label-secondary)}
+.dsh-mft-ro{display:inline-flex;align-items:center;gap:4px;height:22px;padding:0 7px;border:1px solid var(--dsw-alias-border-l1);border-radius:5px;color:var(--dsw-alias-label-secondary);font-size:11px;white-space:nowrap}
+.dsh-mft-menu{position:fixed;z-index:2147483000;min-width:184px;padding:4px;border:1px solid var(--dsw-alias-border-l1);border-radius:8px;background:var(--dsw-alias-bg-overlay);box-shadow:0 8px 28px rgba(0,0,0,.22);color:var(--dsw-alias-label-primary);font-size:13px}
+.dsh-mft-menu-item{display:flex;align-items:center;gap:8px;width:100%;padding:6px 10px;border:0;border-radius:5px;background:transparent;color:var(--dsw-alias-label-primary);font:inherit;font-size:13px;text-align:left;cursor:pointer;white-space:nowrap}
+.dsh-mft-menu-item:hover:not(:disabled){background:var(--dsw-alias-bg-layer-2)}
+.dsh-mft-menu-item:disabled{opacity:.42;cursor:default}
+.dsh-mft-menu-sep{height:1px;margin:4px 6px;background:var(--dsw-alias-border-l1)}
 .dsh-mft-primary{border-color:var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-primary)}
 .dsh-mft-panes{flex:1 1 auto;min-height:0;display:flex;overflow:hidden}
 .dsh-mft-pane{flex:1 1 0;min-width:0;min-height:0;display:flex;flex-direction:column;position:relative;overflow:hidden}
@@ -142,6 +160,7 @@ window.__ModuleLoader__.load({
       preview: ['M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12z', 'M12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6z'],
       doc: ['M6 3h8l4 4v14H6z', 'M14 3v5h5'],
       back: ['M15 18l-6-6 6-6'],
+      lock: ['M7 10V7a5 5 0 0 1 10 0v3', 'M5 10h14v10H5z', 'M12 14v2'],
     }
 
     function basename(path) {
@@ -351,6 +370,7 @@ window.__ModuleLoader__.load({
     const changeListeners = new Set()
     const openListeners = new Set()
     const closeListeners = new Set()
+    const activeListeners = new Set()
 
     function addListener(set, listener) {
       if (typeof listener !== 'function') throw new TypeError('mainFileTabs listener must be a function')
@@ -389,7 +409,22 @@ window.__ModuleLoader__.load({
         title: tab.title,
         viewerId: tab.viewerId,
         kind: tab.kind,
+        readOnly: tab.readOnly === true,
         text: tab.kind === 'text' ? tab.text : undefined,
+      })
+    }
+
+    function emitActive(workspace, previousTab, activeTabId, reason) {
+      if (!workspace) return
+      const active = activeTabId ? workspace.tabs.find((tab) => tab.id === activeTabId) : undefined
+      emit(activeListeners, {
+        sessionId: workspace.sessionId,
+        tabId: active ? active.id : null,
+        path: active ? active.absPath : null,
+        title: active ? active.title : null,
+        previousTabId: previousTab ? previousTab.id : null,
+        previousPath: previousTab ? previousTab.absPath : null,
+        reason: reason || 'activate',
       })
     }
 
@@ -585,6 +620,7 @@ window.__ModuleLoader__.load({
           cwd: info.cwd,
           viewerId: info.viewerId || viewerIdForPath(absPath),
           kind: hasSeed ? 'text' : 'loading',
+          readOnly: info.readOnly === true,
           text: seed,
           savedText: hasSeed ? seed : '',
           mtimeMs: info.mtimeMs,
@@ -606,8 +642,9 @@ window.__ModuleLoader__.load({
         tab.viewerId = info.viewerId || tab.viewerId || viewerIdForPath(absPath)
         if (info.cwd && !tab.cwd) tab.cwd = info.cwd
         if (info.line !== undefined) tab.line = info.line
+        if (info.readOnly !== undefined) tab.readOnly = info.readOnly === true
       }
-      workspace.activeId = tab.id
+      setActiveTab(workspace, tab.id, 'open')
       notify()
       if (info.focus !== false) activateMainViewWithRetry()
       return tab
@@ -652,30 +689,53 @@ window.__ModuleLoader__.load({
       await loadTab(ctx, tab)
     }
 
+    function setActiveTab(workspace, tabId, reason) {
+      const previousId = workspace.activeId
+      if (previousId === tabId) return false
+      if (tabId !== null && !workspace.tabs.some((tab) => tab.id === tabId)) return false
+      const previousTab = previousId ? workspace.tabs.find((tab) => tab.id === previousId) : undefined
+      workspace.activeId = tabId
+      emitActive(workspace, previousTab, tabId, reason || 'activate')
+      notify()
+      return true
+    }
+
     function activateTab(sessionId, tabId) {
       const workspace = workspaceOf(sessionId)
-      if (!workspace.tabs.some((tab) => tab.id === tabId)) return
-      workspace.activeId = tabId
+      setActiveTab(workspace, tabId, 'activate')
+    }
+
+    function closeTabs(ctx, sessionId, tabIds, options) {
+      const workspace = workspaceOf(sessionId)
+      const ids = [...new Set(tabIds)].filter((id) => workspace.tabs.some((tab) => tab.id === id))
+      if (ids.length === 0) return false
+      const closing = workspace.tabs.filter((tab) => ids.includes(tab.id))
+      if (!options || options.force !== true) {
+        if (closing.some((tab) => tabDirty(tab))) {
+          const message = (options && options.message) || localeDicts(ctx)(ids.length > 1 ? 'discardMany' : 'discard')
+          if (typeof window.confirm === 'function' && !window.confirm(message)) return false
+        }
+      }
+      const previousActiveId = workspace.activeId
+      const previousTab = previousActiveId ? workspace.tabs.find((tab) => tab.id === previousActiveId) : undefined
+      const firstIndex = Math.min(...closing.map((tab) => workspace.tabs.indexOf(tab)))
+      const activeRemoved = ids.includes(previousActiveId)
+      for (const tab of closing) {
+        destroyLink(tab.key)
+      }
+      workspace.tabs = workspace.tabs.filter((tab) => !ids.includes(tab.id))
+      for (const tab of closing) emitClose(tab)
+      if (activeRemoved) {
+        const next = workspace.tabs[Math.min(firstIndex, workspace.tabs.length - 1)]
+        workspace.activeId = next ? next.id : null
+        emitActive(workspace, previousTab, workspace.activeId, 'close')
+      }
       notify()
+      return true
     }
 
     function closeTab(ctx, sessionId, tabId) {
-      const workspace = workspaceOf(sessionId)
-      const index = workspace.tabs.findIndex((tab) => tab.id === tabId)
-      if (index < 0) return
-      const tab = workspace.tabs[index]
-      if (tabDirty(tab)) {
-        const message = localeDicts(ctx)('discard')
-        if (typeof window.confirm === 'function' && !window.confirm(message)) return
-      }
-      destroyLink(tab.key)
-      emitClose(tab)
-      workspace.tabs.splice(index, 1)
-      if (workspace.activeId === tabId) {
-        const next = workspace.tabs[index] || workspace.tabs[index - 1]
-        workspace.activeId = next ? next.id : null
-      }
-      notify()
+      return closeTabs(ctx, sessionId, [tabId], { message: localeDicts(ctx)('discard') })
     }
 
     // ---------------------------------------------------------------------
@@ -1111,6 +1171,50 @@ window.__ModuleLoader__.load({
         }
       }, [link, tab.key, tab.revision, forceMode])
 
+      React.useEffect(() => {
+        if (!tab.readOnly || !hostRef.current) return undefined
+        const root = hostRef.current
+        const content = () => root.querySelector('.cm-content')
+        const enforce = () => {
+          const element = content()
+          if (!element) return
+          if (element.getAttribute('contenteditable') !== 'false') element.setAttribute('contenteditable', 'false')
+          element.setAttribute('aria-readonly', 'true')
+        }
+        enforce()
+        const observer = new MutationObserver(enforce)
+        observer.observe(root, { subtree: true, childList: true, attributes: true, attributeFilter: ['contenteditable'] })
+        const block = (event) => {
+          event.preventDefault()
+          event.stopPropagation()
+        }
+        const onKeyDown = (event) => {
+          if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 's') {
+            event.preventDefault()
+            event.stopPropagation()
+            event.stopImmediatePropagation()
+          }
+        }
+        root.addEventListener('beforeinput', block, true)
+        root.addEventListener('paste', block, true)
+        root.addEventListener('cut', block, true)
+        root.addEventListener('drop', block, true)
+        root.addEventListener('keydown', onKeyDown, true)
+        return () => {
+          observer.disconnect()
+          root.removeEventListener('beforeinput', block, true)
+          root.removeEventListener('paste', block, true)
+          root.removeEventListener('cut', block, true)
+          root.removeEventListener('drop', block, true)
+          root.removeEventListener('keydown', onKeyDown, true)
+          const element = content()
+          if (element) {
+            element.setAttribute('contenteditable', 'true')
+            element.removeAttribute('aria-readonly')
+          }
+        }
+      }, [tab.readOnly, tab.id])
+
       const seed = React.useRef(null)
       if (seed.current === null) seed.current = seedTextOf(tab)
       const storeAdapter = React.useMemo(() => makeStoreAdapter(ctx), [ctx])
@@ -1238,6 +1342,7 @@ window.__ModuleLoader__.load({
       const canSplit = isPreviewable(tab.viewerId)
       const showSplit = canSplit && layout === 'split'
       const editable = !(editorState && editorState.editable === false)
+      const readOnly = tab.readOnly === true
       const dirty = tabDirty(tab)
       const saveState = editorState && editorState.saveState
       const editorMode = editorState && editorState.mode
@@ -1248,6 +1353,7 @@ window.__ModuleLoader__.load({
         if (controls && typeof controls.setMode === 'function') controls.setMode(mode)
       }
       const doSave = () => {
+        if (readOnly) return
         if (controls && typeof controls.save === 'function') controls.save()
       }
       const doReload = () => { void reloadTab(ctx, tab) }
@@ -1256,6 +1362,7 @@ window.__ModuleLoader__.load({
       return h('div', { className: 'dsh-mft-body' },
         h('div', { className: 'dsh-mft-toolbar' },
           h('span', { className: 'dsh-mft-path', title: pathLabel }, pathLabel),
+          readOnly && h('span', { className: 'dsh-mft-ro', title: t('readOnly') }, hIcon(ICONS.lock, 12), h('span', null, t('readOnly'))),
           canSplit && !showSplit && h('button', {
             type: 'button',
             className: 'dsh-mft-tool',
@@ -1280,8 +1387,8 @@ window.__ModuleLoader__.load({
           h('button', {
             type: 'button',
             className: 'dsh-mft-tool' + (dirty ? ' dsh-mft-primary' : ''),
-            disabled: !editable || !dirty || saveState === 'saving',
-            title: t('save'),
+            disabled: readOnly || !editable || !dirty || saveState === 'saving',
+            title: readOnly ? `${t('save')} (${t('readOnly')})` : t('save'),
             onClick: doSave,
           }, hIcon(ICONS.save, 14), h('span', null, saveLabel)),
           h('button', { type: 'button', className: 'dsh-mft-reload', title: t('reload'), onClick: doReload }, hIcon(ICONS.reload, 14)),
@@ -1335,6 +1442,50 @@ window.__ModuleLoader__.load({
     function TabStrip(props) {
       const { ctx, workspace, service } = props
       const t = useT(ctx)
+      const [menu, setMenu] = React.useState(null)
+
+      React.useEffect(() => {
+        if (!menu) return undefined
+        const close = () => setMenu(null)
+        const onKey = (event) => { if (event.key === 'Escape') close() }
+        window.addEventListener('mousedown', close)
+        window.addEventListener('resize', close)
+        window.addEventListener('scroll', close, true)
+        document.addEventListener('keydown', onKey)
+        return () => {
+          window.removeEventListener('mousedown', close)
+          window.removeEventListener('resize', close)
+          window.removeEventListener('scroll', close, true)
+          document.removeEventListener('keydown', onKey)
+        }
+      }, [menu])
+
+      const openMenu = (event, tab) => {
+        event.preventDefault()
+        event.stopPropagation()
+        setMenu({ x: event.clientX, y: event.clientY, tabId: tab.id })
+      }
+
+      const menuAction = (tabIds) => {
+        setMenu(null)
+        if (tabIds.length === 0) return
+        if (tabIds.length === 1) closeTab(ctx, workspace.sessionId, tabIds[0])
+        else closeTabs(ctx, workspace.sessionId, tabIds)
+      }
+
+      const menuIndex = menu ? workspace.tabs.findIndex((tab) => tab.id === menu.tabId) : -1
+      const allIds = workspace.tabs.map((tab) => tab.id)
+      const leftIds = menuIndex > 0 ? allIds.slice(0, menuIndex) : []
+      const rightIds = menuIndex >= 0 ? allIds.slice(menuIndex + 1) : []
+      const menuItems = menu && menuIndex >= 0
+        ? [
+          { id: 'close', label: t('close'), disabled: false, action: () => menuAction([menu.tabId]) },
+          { id: 'all', label: t('closeAll'), disabled: allIds.length === 0, action: () => menuAction(allIds) },
+          { id: 'left', label: t('closeLeft'), disabled: leftIds.length === 0, action: () => menuAction(leftIds) },
+          { id: 'right', label: t('closeRight'), disabled: rightIds.length === 0, action: () => menuAction(rightIds) },
+        ]
+        : []
+
       return h('div', { className: 'dsh-mft-tabs', role: 'tablist', 'aria-label': t('tabList') },
         workspace.tabs.map((tab) => {
           const active = workspace.activeId === tab.id
@@ -1346,6 +1497,7 @@ window.__ModuleLoader__.load({
             'aria-selected': active ? 'true' : 'false',
             title: tab.absPath,
             onClick: () => activateTab(workspace.sessionId, tab.id),
+            onContextMenu: (event) => openMenu(event, tab),
             onAuxClick: (event) => {
               if (event.button === 1) {
                 event.preventDefault()
@@ -1355,6 +1507,7 @@ window.__ModuleLoader__.load({
           },
             h('span', { className: 'dsh-mft-tabicon' }, tabIcon(service, tab.absPath)),
             h('span', { className: 'dsh-mft-tabname' }, tab.title),
+            tab.readOnly === true && h('span', { className: 'dsh-mft-tablock', title: t('readOnly') }, hIcon(ICONS.lock, 11)),
             tabDirty(tab) && h('span', { className: 'dsh-mft-dot', 'aria-hidden': 'true' }),
             h('button', {
               type: 'button',
@@ -1376,6 +1529,26 @@ window.__ModuleLoader__.load({
             showConversationView()
           },
         }, hIcon(ICONS.back, 14), h('span', null, t('backToChat'))),
+        menuItems.length > 0 && ReactDOM.createPortal(
+          h('div', {
+            className: 'dsh-mft-menu',
+            role: 'menu',
+            style: { left: menu.x, top: menu.y },
+            onMouseDown: (event) => event.stopPropagation(),
+          },
+            menuItems.map((item, index) => h(React.Fragment, { key: item.id },
+              index === 1 && h('div', { className: 'dsh-mft-menu-sep' }),
+              h('button', {
+                type: 'button',
+                role: 'menuitem',
+                className: 'dsh-mft-menu-item',
+                disabled: item.disabled,
+                onClick: item.action,
+              }, h('span', null, item.label)),
+            )),
+          ),
+          document.body,
+        ),
       )
     }
 
@@ -1461,6 +1634,7 @@ window.__ModuleLoader__.load({
         path: raw.path,
         line: typeof raw.line === 'number' && Number.isFinite(raw.line) ? Math.max(1, Math.floor(raw.line)) : undefined,
         viewerId: typeof raw.viewerId === 'string' ? raw.viewerId : undefined,
+        readOnly: typeof raw.readOnly === 'boolean' ? raw.readOnly : (typeof raw.readonly === 'boolean' ? raw.readonly : undefined),
         text: typeof raw.text === 'string' ? raw.text : undefined,
         mtimeMs: typeof raw.mtimeMs === 'number' ? raw.mtimeMs : undefined,
         size: typeof raw.size === 'number' ? raw.size : undefined,
@@ -1469,12 +1643,12 @@ window.__ModuleLoader__.load({
 
     function createMainFileTabsApi(ctx) {
       return {
-        version: '1.0.0',
-        features: ['openFile', 'onDidChange', 'onDidOpen', 'onDidClose', 'getOpenFiles', 'getText'],
+        version: '1.1.0',
+        features: ['openFile', 'onDidChange', 'onDidOpen', 'onDidClose', 'onDidChangeActiveTab', 'getOpenFiles', 'getText'],
         /**
          * Open a file in the main workspace view.
-         * @param input - path string, or { sessionId?, cwd?, path, line?, viewerId?, text?, mtimeMs?, size? }
-         * @returns { sessionId, path, tabId, title, viewerId, ready: Promise<handle> }
+         * @param input - path string, or { sessionId?, cwd?, path, line?, viewerId?, readOnly?, text?, mtimeMs?, size? }
+         * @returns { sessionId, path, tabId, title, viewerId, line, readOnly, ready: Promise<handle> }
          */
         openFile(input) {
           const info = normalizeOpenInput(ctx, input)
@@ -1491,6 +1665,7 @@ window.__ModuleLoader__.load({
             title: tab.title,
             viewerId: tab.viewerId,
             line: tab.line,
+            readOnly: tab.readOnly === true,
           }
           return { ...handle, ready: tab.ready ? tab.ready.then(() => handle) : Promise.resolve(handle) }
         },
@@ -1505,6 +1680,10 @@ window.__ModuleLoader__.load({
         /** Listen for a main workspace tab closing. Returns a disposer. */
         onDidClose(listener) {
           return addListener(closeListeners, listener)
+        },
+        /** Listen for the active tab changing (switch, open, or active-tab close). */
+        onDidChangeActiveTab(listener) {
+          return addListener(activeListeners, listener)
         },
         /** List open main-workspace files, optionally for one session. */
         getOpenFiles(sessionId) {
@@ -1523,6 +1702,7 @@ window.__ModuleLoader__.load({
                 kind: tab.kind,
                 line: tab.line,
                 mtimeMs: tab.mtimeMs,
+                readOnly: tab.readOnly === true,
                 dirty: tabDirty(tab),
                 text: tab.kind === 'text' ? tab.text : undefined,
               })
@@ -1646,6 +1826,7 @@ window.__ModuleLoader__.load({
         changeListeners.clear()
         openListeners.clear()
         closeListeners.clear()
+        activeListeners.clear()
       })
 
       try {

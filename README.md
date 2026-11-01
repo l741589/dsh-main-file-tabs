@@ -49,7 +49,7 @@ DSH 的右侧边栏适合快速浏览文件，但编辑长文档、宽表格或�
 ## 功能
 
 - **一键打开**：右侧边栏文件工具栏右上角的按钮、页签「…」菜单，或原生预览工具栏。
-- **主工作区页签**：切换、关闭、中键关闭；文件图标与侧边栏一致。
+- **主工作区页签**：切换、关闭、中键关闭；右键菜单支持关闭、关闭所有、关闭左侧所有、关闭右侧所有；文件图标与侧边栏一致。
 - **实时双向同步**：基于 CodeMirror 的 `view.dispatch`，约 45ms 内同步到另一侧。
 - **与侧边栏完全相同的渲染**：复用侧边栏注册的 `TextEditor`，保留语法高亮、Markdown 预览、Mermaid、TOC、图片解析等能力。
 - **边编辑边预览**：Markdown / HTML / JSONL 支持「编辑 / 预览 / 分屏」。
@@ -123,7 +123,8 @@ dsh plugin --profile desktop add ./dsh-main-file-tabs
    - 主工作区编辑 → 侧边栏更新；
    - Markdown 预览会跟随编辑刷新。
 5. Markdown / HTML / JSONL 可以点击工具栏的 **「分屏」**，左侧编辑、右侧预览。
-6. 点文件工作区右上角的 **「对话」** 返回聊天 View；右侧边栏和会话头部不会丢失。
+6. 页签右键菜单可以关闭当前、关闭所有、关闭左侧所有或关闭右侧所有。
+7. 点文件工作区右上角的 **「对话」** 返回聊天 View；右侧边栏和会话头部不会丢失。
 
 ## 工作原理
 
@@ -174,13 +175,14 @@ const handle = ctx.get('mainFileTabs').openFile({
   path: 'docs/design.md',    // 绝对路径，或相对 cwd
   line: 12,                  // 可选，1-based；会定位到该行
   viewerId: 'markdown',      // 可选；默认按扩展名匹配
+  readOnly: true,            // 可选；只读打开，禁止编辑并拦截保存
   text: undefined,           // 可选：直接提供初始文本
   mtimeMs: undefined,        // 可选：与 text 配套的保存基线
   size: undefined,           // 可选：与 text 配套的大小
 })
 
 await handle.ready
-// { sessionId, path, tabId, title, viewerId, line }
+// { sessionId, path, tabId, title, viewerId, line, readOnly }
 ```
 
 如果文件已经在侧边栏打开且有未保存文本，API 会优先采用侧边栏的实时文本，而不是磁盘旧内容。
@@ -192,6 +194,7 @@ await handle.ready
 | `path` | `string` | 文件路径（绝对或相对 `cwd`），必填 |
 | `line` | `number?` | 打开后定位到的 1-based 行号 |
 | `viewerId` | `string?` | 强制使用某个 viewer id；默认按扩展名 |
+| `readOnly` | `boolean?` | 只读打开；禁止编辑输入并拦截保存（含 Ctrl/Cmd+S 与工具栏保存） |
 | `text` | `string?` | 直接提供初始文本，不再从磁盘读取 |
 | `mtimeMs` | `number?` | 与 `text` 配套的保存基线 |
 | `size` | `number?` | 与 `text` 配套的文件大小 |
@@ -203,10 +206,11 @@ await handle.ready
 | 方法 | 触发时机 | 事件字段 |
 |---|---|---|
 | `onDidChange(listener)` | 主工作区或侧边栏的文本文档发生变化（约 45ms 节流） | `sessionId`, `path`, `tabId`, `title`, `text`, `source: 'main' \| 'sidebar'` |
-| `onDidOpen(listener)` | 打开的文件读取完成、页签就绪 | `sessionId`, `path`, `tabId`, `title`, `viewerId`, `kind`, `text?` |
+| `onDidOpen(listener)` | 打开的文件读取完成、页签就绪 | `sessionId`, `path`, `tabId`, `title`, `viewerId`, `kind`, `readOnly`, `text?` |
 | `onDidClose(listener)` | 页签关闭 | `sessionId`, `path`, `tabId`, `title` |
+| `onDidChangeActiveTab(listener)` | 活跃页签切换、打开新页签，或关闭活跃页签导致自动切换；关闭非活跃页签不触发 | `sessionId`, `tabId`, `path`, `title`, `previousTabId`, `previousPath`, `reason: 'activate' \| 'open' \| 'close'` |
 
-三个方法都返回 disposer：
+这些方法都返回 disposer：
 
 ```js
 const off = api.onDidChange(handler)
@@ -217,15 +221,15 @@ off()
 ### 查询
 
 ```js
-api.getOpenFiles(sessionId?)   // 打开列表：sessionId/path/tabId/title/viewerId/kind/line/mtimeMs/dirty/text?
+api.getOpenFiles(sessionId?)   // 打开列表：sessionId/path/tabId/title/viewerId/kind/line/mtimeMs/readOnly/dirty/text?
 api.getText({ sessionId, cwd, path }) // 返回主工作区内存中的当前文本；不存在返回 undefined
 ```
 
 ### 服务元数据
 
 ```js
-api.version   // '1.0.0'
-api.features  // ['openFile','onDidChange','onDidOpen','onDidClose','getOpenFiles','getText']
+api.version   // '1.1.0'
+api.features  // ['openFile','onDidChange','onDidOpen','onDidClose','onDidChangeActiveTab','getOpenFiles','getText']
 ```
 
 > `mainFileTabs` 是 **Client 服务**，不是 Host 工具；只能在浏览器端插件中使用。
@@ -314,7 +318,7 @@ node --check index.js
 
 ### API 兼容性
 
-- 服务版本当前为 `1.0.0`。
+- 服务版本当前为 `1.1.0`。
 - 新能力通过 `api.features` 加法式暴露；已有方法签名尽量保持向后兼容。
 - 如果必须做破坏性变更，会提升服务主版本并保留旧入口一段时间。
 
