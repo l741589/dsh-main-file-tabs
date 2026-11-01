@@ -1443,17 +1443,22 @@ window.__ModuleLoader__.load({
       const { ctx, workspace, service } = props
       const t = useT(ctx)
       const [menu, setMenu] = React.useState(null)
+      const menuRef = React.useRef(null)
 
       React.useEffect(() => {
         if (!menu) return undefined
         const close = () => setMenu(null)
         const onKey = (event) => { if (event.key === 'Escape') close() }
-        window.addEventListener('mousedown', close)
+        const onMouseDown = (event) => {
+          if (menuRef.current && menuRef.current.contains(event.target)) return
+          close()
+        }
+        document.addEventListener('mousedown', onMouseDown)
         window.addEventListener('resize', close)
         window.addEventListener('scroll', close, true)
         document.addEventListener('keydown', onKey)
         return () => {
-          window.removeEventListener('mousedown', close)
+          document.removeEventListener('mousedown', onMouseDown)
           window.removeEventListener('resize', close)
           window.removeEventListener('scroll', close, true)
           document.removeEventListener('keydown', onKey)
@@ -1532,6 +1537,7 @@ window.__ModuleLoader__.load({
         menuItems.length > 0 && ReactDOM.createPortal(
           h('div', {
             className: 'dsh-mft-menu',
+            ref: menuRef,
             role: 'menu',
             style: { left: menu.x, top: menu.y },
             onMouseDown: (event) => event.stopPropagation(),
